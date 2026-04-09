@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "75d97a3b8cd6df5b",
+        "id": "857adcb2eaecddac",
         "type": "tabs",
         "children": [
           {
-            "id": "d202be76c1cfe4d6",
+            "id": "d5ce03a27ee97ae9",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "tasks/todo.md",
+                "file": "project/roadmap.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "todo"
+              "title": "roadmap"
             }
           }
         ]
@@ -183,10 +183,16 @@
       "bases:Создать новую базу": false
     }
   },
-  "active": "d202be76c1cfe4d6",
+  "active": "d5ce03a27ee97ae9",
   "lastOpenFiles": [
+    "backend",
+    "project/overview.md",
+    "tasks/todo.md",
+    "index.md",
+    "netology/README.md",
+    "api/README.md",
+    "api/api.md",
     "tasks/in-progress.md",
-    "tasks/done.md",
-    "index.md"
+    "tasks/done.md"
   ]
 }

@@ -16,6 +16,7 @@ htmlcov/
 .venv/
 venv/
 env/
+.python-version
 
 # Django
 db.sqlite3
@@ -42,6 +43,10 @@ coverage/
 # Environment
 .env
 .env.*
+.env.local
+
+# Logs
+*.log
 
 # Project workspace
 docs/workspace/**

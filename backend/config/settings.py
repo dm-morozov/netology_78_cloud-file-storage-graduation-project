@@ -134,3 +134,5 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = BASE_DIR / 'storage' / 'media'
 MEDIA_URL = '/media/'
+
+AUTH_USER_MODEL = 'users.User'

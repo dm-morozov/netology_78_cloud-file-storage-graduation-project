@@ -42,8 +42,7 @@ frontend/  → React (SPA-интерфейс)
 - Python 3.12+
 - Django
 - Django REST Framework
-- PostgreSQL (в production)
-- SQLite (в development)
+- PostgreSQL
 
 ### Frontend
 
@@ -56,7 +55,6 @@ frontend/  → React (SPA-интерфейс)
 
 - Git + GitHub
 - VPS (reg.ru)
-- Linux (production)
 
 ---
 

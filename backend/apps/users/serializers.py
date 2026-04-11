@@ -1,12 +1,15 @@
 from rest_framework import serializers
 from .models import User
+import re
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
     Сериализатор для регистрации пользователя
     """
     # Валидируем данные с фронта (JSON)
-    password = serializers.CharField(write_only=True)
+
+    username = serializers.CharField(min_length=4, max_length=20)
+    password = serializers.CharField(write_only=True, min_length=6)
 
     # Можно передать пустую строку, поле не является обязательным
     first_name = serializers.CharField(required=False, allow_blank=True)
@@ -21,6 +24,28 @@ class RegisterSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
         )
+
+    def validate_username(self, value):
+        pattern = r'^[a-zA-Z][a-zA-Z0-9]{3,19}$'
+
+        if not re.fullmatch(pattern, value):
+            raise serializers.ValidationError(
+                "Логин должен начинаться с латинской буквы и содержать только латинские буквы и цифры."
+            )
+        
+        return value
+    
+    def validate_password(self, value):
+        if not (
+            re.search(r'[A-Z]', value) 
+            and re.search(r'[0-9]', value) 
+            and re.search(r'[^a-zA-Z0-9]', value)
+        ):
+            raise serializers.ValidationError(
+                "Пароль должен содержать минимум одну заглавную букву, одну цифру и один специальный символ."
+            )
+        
+        return value
 
     def create(self, validated_data):
         # Используем именно create_user:

@@ -26,7 +26,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
 
     def validate_username(self, value):
-        pattern = r'^[a-zA-Z][a-zA-Z0-9]{3,19}$'
+        pattern = r'^[a-zA-Z][a-zA-Z0-9]*$'
 
         if not re.fullmatch(pattern, value):
             raise serializers.ValidationError(
@@ -36,21 +36,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
     
     def validate_password(self, value):
-        if not (
-            re.search(r'[A-Z]', value) 
-            and re.search(r'[0-9]', value) 
-            and re.search(r'[^a-zA-Z0-9]', value)
-        ):
+        if not re.search(r'[A-Z]', value):
             raise serializers.ValidationError(
-                "Пароль должен содержать минимум одну заглавную букву, одну цифру и один специальный символ."
+                'Пароль должен содержать хотя бы одну заглавную букву.'
             )
-        
-        return value
 
-    def create(self, validated_data):
-        # Используем именно create_user:
-        # пароль хешируется, используется встроенная логика Django
-        return User.objects.create_user(**validated_data)
+        if not re.search(r'[0-9]', value):
+            raise serializers.ValidationError(
+                'Пароль должен содержать хотя бы одну цифру.'
+            )
+
+        if not re.search(r'[^a-zA-Z0-9]', value):
+            raise serializers.ValidationError(
+                'Пароль должен содержать хотя бы один специальный символ.'
+            )
+
+        return value
     
 
 class LoginSerializer(serializers.Serializer):

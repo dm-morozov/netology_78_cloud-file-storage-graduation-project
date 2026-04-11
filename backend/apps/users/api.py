@@ -3,10 +3,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
-from django.contrib.auth import login, authenticate, logout
 from django.urls import path
 
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from .services import login_user, logout_user, register_user
+
 
 class RegisterApi(APIView):
 
@@ -18,10 +19,17 @@ class RegisterApi(APIView):
         serializer = RegisterSerializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = register_user(serializer.validated_data)
         
         return Response(
-            {'message': 'Новый пользователь создан!'},
+            {
+                'message': f'Новый пользователь создан!',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email
+                }
+            },
             status=status.HTTP_201_CREATED
         )
     
@@ -35,23 +43,14 @@ class LoginApi(APIView):
         serializer = LoginSerializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
-
-        username = serializer.validated_data['username']
-        password = serializer.validated_data['password']
-
-        user = authenticate(
-            request=request,
-            username=username,
-            password=password,
-        )
+        data = serializer.validated_data
+        user = login_user(request, data['username'], data['password'])
 
         if user is None:
             return Response(
                 {'detail': 'Неверный логин или пароль'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        login(request, user)
 
         return Response(
             {'message': 'Вход успешно выполнен!'},
@@ -70,7 +69,7 @@ class LogoutApi(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        logout(request)
+        logout_user(request)
 
         return Response(
             {'message': 'Вы вышли из системы'},

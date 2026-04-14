@@ -20,19 +20,15 @@ class RegisterApi(APIView):
 
         serializer.is_valid(raise_exception=True)
         user = register_user(serializer.validated_data)
-        
+
         return Response(
             {
-                'message': f'Новый пользователь создан!',
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email
-                }
+                "message": f"Новый пользователь создан!",
+                "user": {"id": user.id, "username": user.username, "email": user.email},
             },
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )
-    
+
 
 class LoginApi(APIView):
 
@@ -44,26 +40,26 @@ class LoginApi(APIView):
 
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        user = login_user(request, data['username'], data['password'])
+        user = login_user(request, data["username"], data["password"])
 
         if user is None:
             return Response(
-                {'detail': 'Неверный логин или пароль'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Неверный логин или пароль"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response(
-            {'message': 'Вход успешно выполнен!'},
-            status=status.HTTP_200_OK
+            {"message": "Вход успешно выполнен!"}, status=status.HTTP_200_OK
         )
-    
+
+
 class MeApi(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
-    
+
 
 class LogoutApi(APIView):
     permission_classes = [IsAuthenticated]
@@ -71,11 +67,8 @@ class LogoutApi(APIView):
     def post(self, request, *args, **kwargs):
         logout_user(request)
 
-        return Response(
-            {'message': 'Вы вышли из системы'},
-            status=status.HTTP_200_OK
-        )
-    
+        return Response({"message": "Вы вышли из системы"}, status=status.HTTP_200_OK)
+
     # Чисто для теста, чтобы разлогиниться через браузер, потому что это всегда get запросы
     # def get(self, request, *args, **kwargs):
     #     logout(request)
@@ -86,8 +79,8 @@ class LogoutApi(APIView):
 
 
 urlpatterns = [
-    path('register/', RegisterApi.as_view()),
-    path('login/', LoginApi.as_view()),
-    path('me/', MeApi.as_view()),
-    path('logout/', LogoutApi.as_view()),
+    path("register/", RegisterApi.as_view()),
+    path("login/", LoginApi.as_view()),
+    path("me/", MeApi.as_view()),
+    path("logout/", LogoutApi.as_view()),
 ]

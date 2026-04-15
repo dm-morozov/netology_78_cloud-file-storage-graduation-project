@@ -1,3 +1,4 @@
+from django.http import FileResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,10 +8,11 @@ from django.urls import path
 
 from .services import (
     delete_user_file,
+    get_file_for_download,
+    get_user_file,
     get_user_files,
     update_user_file,
     upload_file,
-    get_user_file,
 )
 from .serializers import (
     StoredFileSerializer,
@@ -58,10 +60,10 @@ class FileDetailApi(APIView):
     def delete(self, request, file_id, *args, **kwargs):
         try:
             delete_user_file(request.user, file_id)
-        except ValueError as error:
+        except (NotFound, PermissionDenied) as error:
             return Response(
                 {"detail": str(error)},
-                status=status.HTTP_404_NOT_FOUND,
+                status=error.status_code,
             )
 
         return Response(
@@ -92,8 +94,40 @@ class FileDetailApi(APIView):
             status=status.HTTP_200_OK,
         )
 
+    def get(self, request, file_id, *args, **kwargs):
+        stored_file = get_user_file(request.user, file_id)
+        serializer = StoredFileSerializer(instance=stored_file)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class FileDownloadApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, file_id, *args, **kwargs):
+        try:
+            stored_file = get_file_for_download(request.user, file_id)
+
+            # возвращаем файл, но возвращаем не просто через файл, а именно через FileResponse
+            # Так как если файл большой, например 1Тб он не скачивался полность и не
+            # забивал ОП, а передавал файл частями на сторону клиента
+            return FileResponse(
+                stored_file.file.open("rb"),
+                as_attachment=True,  # т.е. файл нужно именно скачать, а не inline (открыть в браузере)
+                filename=stored_file.original_name,
+            )
+
+        # когда файл не найден или когда у пользователя нет прав
+        except (NotFound, PermissionDenied) as error:
+            return Response({"detail": str(error)}, status=error.status_code)
+        except FileNotFoundError:
+            return Response(
+                {"detail": "Файл не найден на сервере или недоступен"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
 
 urlpatterns = [
     path("", FileListCreateApi.as_view(), name="file-list-create"),
     path("<int:file_id>/", FileDetailApi.as_view(), name="file-detail"),
+    path("<int:file_id>/download/", FileDownloadApi.as_view(), name="file-download"),
 ]

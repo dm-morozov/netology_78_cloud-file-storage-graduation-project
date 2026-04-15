@@ -1,6 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
 from .models import StoredFile
+from django.utils import timezone
 
 from rest_framework.exceptions import PermissionDenied, NotFound
 
@@ -69,5 +70,18 @@ def update_user_file(owner, file_id, data: dict):
         setattr(stored_file, field, value)
 
     stored_file.save()
+
+    return stored_file
+
+
+def get_file_for_download(owner, file_id):
+    # Получаем объект (файл)
+    stored_file = get_user_file(owner, file_id)
+
+    # Обновляем время последнего скачивания
+    stored_file.last_downloaded_at = timezone.now()
+
+    # Используем update_fields - обновляем только одну колонку для производительности
+    stored_file.save(update_fields=["last_downloaded_at"])
 
     return stored_file

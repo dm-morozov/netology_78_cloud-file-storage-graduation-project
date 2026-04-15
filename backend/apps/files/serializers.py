@@ -28,3 +28,17 @@ class StoredFileSerializer(serializers.ModelSerializer):
         )
 
         read_only_fields = fields
+
+
+class FileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoredFile
+        fields = (
+            "original_name",
+            "comment",
+        )
+        # Делаем их необязательными, так как это PATCH (можем менять что-то одно)
+        extra_kwargs = {
+            "original_name": {"required": False},
+            "comment": {"required": False},
+        }

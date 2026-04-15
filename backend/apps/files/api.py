@@ -1,15 +1,22 @@
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied, NotFound
 from django.urls import path
 
-from .services import delete_user_file, get_user_files, upload_file, get_user_file
+from .services import (
+    delete_user_file,
+    get_user_files,
+    update_user_file,
+    upload_file,
+    get_user_file,
+)
 from .serializers import (
     StoredFileSerializer,
     UploadFileSerializer,
     StoredFileCreateResponseSerializer,
+    FileUpdateSerializer,
 )
 
 
@@ -48,12 +55,42 @@ class FileListCreateApi(APIView):
 class FileDetailApi(APIView):
     permission_classes = [IsAuthenticated]
 
-    def delete(self, request, file_id=None):
-        if file_id is None:
-            raise ValueError("file_id is required")
-        file = get_user_file(request.user, file_id)
-        file.delete()
-        delete_user_file(file_id)
+    def delete(self, request, file_id, *args, **kwargs):
+        try:
+            delete_user_file(request.user, file_id)
+        except ValueError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(
+            {
+                "message": "Файл успешно удален",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, file_id, *args, **kwargs):
+        # Валидируем входящие данные
+        # partial=True нужно для частичного обновления данных
+        # Сериализатор игнорирует отсутствие обязательных полей
+        serializer = FileUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        # Вызываем сервис и передаем туда проверенные данные
+        try:
+            stored_file = update_user_file(
+                owner=request.user, file_id=file_id, data=serializer.validated_data
+            )
+        except (NotFound, PermissionDenied) as error:
+            return Response({"detail": str(error)}, status=error.status_code)
+
+        # Возвращаем
+        return Response(
+            StoredFileSerializer(instance=stored_file).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 urlpatterns = [

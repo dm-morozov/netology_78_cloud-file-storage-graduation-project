@@ -2,6 +2,8 @@ from pathlib import Path
 from uuid import uuid4
 from .models import StoredFile
 
+from rest_framework.exceptions import PermissionDenied, NotFound
+
 
 def upload_file(*, owner, uploaded_file, comment=""):
     """
@@ -31,19 +33,41 @@ def upload_file(*, owner, uploaded_file, comment=""):
 
 # функция получения файлов
 def get_user_files(owner):
+    """
+    Возвращает все файлы пользователя.
+    """
     return owner.files.all()
 
 
-def get_user_file(owner, file_id):
+def get_user_file(user, file_id):
     try:
-        return owner.files.get(id=file_id)
+        file = StoredFile.objects.get(id=file_id)
+        # Проверка прав: владелец или админ
+        if file.owner != user and not user.is_staff:
+            raise PermissionDenied("У вас нет прав для доступа к этому файлу.")
+        return file
     except StoredFile.DoesNotExist:
-        raise ValueError("Файл не найден")
+        raise NotFound("Файл не найден.")
 
 
-def delete_user_file(file_id):
-    try:
-        stored_file = StoredFile.objects.filter(id=file_id).first()
-        stored_file.file.delete()
-    except:
-        raise ValueError("Файл не найден")
+def delete_user_file(owner, file_id):
+    """
+    Удаляет файл пользователя с диска и из базы данных.
+    """
+    stored_file = get_user_file(owner, file_id)
+
+    stored_file.file.delete(save=False)  # удаляем файл с диска, не трогая запись в БД
+    stored_file.delete()  # удаляем запись из БД
+
+
+def update_user_file(owner, file_id, data: dict):
+    # Получаем объект (файл)
+    stored_file = get_user_file(owner, file_id)
+
+    # Метод setattr(объект, имя_поля (ключ), значение)
+    for field, value in data.items():
+        setattr(stored_file, field, value)
+
+    stored_file.save()
+
+    return stored_file

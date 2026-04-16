@@ -42,3 +42,11 @@ class FileUpdateSerializer(serializers.ModelSerializer):
             "original_name": {"required": False},
             "comment": {"required": False},
         }
+
+
+class FilesQuerySerializer(serializers.Serializer):
+    owner_id = serializers.IntegerField(
+        min_value=1,  # если значение передано, то оно должно быть положительным
+        required=False,
+        help_text="ID пользователя-владельца файла. Если не указано, возвращаются файлы текущего пользователя.",
+    )

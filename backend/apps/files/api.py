@@ -8,13 +8,15 @@ from django.urls import path
 
 from .services import (
     delete_user_file,
-    get_file_for_download,
+    get_downloadable_file,
+    get_files_for_listing,
     get_user_file,
-    get_user_files,
+    mark_file_as_downloaded,
     update_user_file,
     upload_file,
 )
 from .serializers import (
+    FilesQuerySerializer,
     StoredFileSerializer,
     UploadFileSerializer,
     StoredFileCreateResponseSerializer,
@@ -48,9 +50,20 @@ class FileListCreateApi(APIView):
         )
 
     def get(self, request, *args, **kwargs):
-        files = get_user_files(request.user)
-        serializer = StoredFileSerializer(instance=files, many=True)
+        query_serializer = FilesQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
 
+        owner_id = query_serializer.validated_data.get("owner_id")
+
+        try:
+            files = get_files_for_listing(user=request.user, owner_id=owner_id)
+        except (NotFound, PermissionDenied) as error:
+            return Response(
+                {"detail": str(error)},
+                status=error.status_code,
+            )
+
+        serializer = StoredFileSerializer(instance=files, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -95,7 +108,12 @@ class FileDetailApi(APIView):
         )
 
     def get(self, request, file_id, *args, **kwargs):
-        stored_file = get_user_file(request.user, file_id)
+
+        try:
+            stored_file = get_user_file(request.user, file_id)
+        except (NotFound, PermissionDenied) as error:
+            return Response({"detail": str(error)}, status=error.status_code)
+
         serializer = StoredFileSerializer(instance=stored_file)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -105,13 +123,18 @@ class FileDownloadApi(APIView):
 
     def get(self, request, file_id, *args, **kwargs):
         try:
-            stored_file = get_file_for_download(request.user, file_id)
+            stored_file = get_downloadable_file(request.user, file_id)
 
             # возвращаем файл, но возвращаем не просто через файл, а именно через FileResponse
             # Так как если файл большой, например 1Тб он не скачивался полность и не
             # забивал ОП, а передавал файл частями на сторону клиента
+
+            file_handle = stored_file.file.open("rb")
+            # Если файл существует и в БД и Локально, тогда меняем время скачивания
+            mark_file_as_downloaded(stored_file)
+
             return FileResponse(
-                stored_file.file.open("rb"),
+                file_handle,  # открываем файл для чтения в бинарном режиме
                 as_attachment=True,  # т.е. файл нужно именно скачать, а не inline (открыть в браузере)
                 filename=stored_file.original_name,
             )

@@ -1,5 +1,8 @@
 from .models import User
 from django.contrib.auth import login, authenticate, logout
+from django.db.models import Count, Sum, Value
+from django.db.models.functions import Coalesce
+from rest_framework.exceptions import NotFound, PermissionDenied
 
 
 def register_user(validated_data) -> User:
@@ -12,10 +15,11 @@ def register_user(validated_data) -> User:
     :return: Новый пользователь
     :rtype: User
     """
-    
+
     # Используем именно create_user:
     # пароль хешируется, используется встроенная логика Django
     return User.objects.create_user(**validated_data)
+
 
 def login_user(request, username, password) -> User | None:
 
@@ -27,9 +31,46 @@ def login_user(request, username, password) -> User | None:
 
     if user is None:
         return None
-    
+
     login(request, user)
     return user
 
+
 def logout_user(request) -> None:
     logout(request)
+
+
+def get_users_for_admin_listing():
+    # к каждому пользователю добавить поле files_count как количество файлов
+    # и поле total_size как сумму размеров файлов — .annotate(...)
+    return User.objects.annotate(
+        files_count=Count("files"),  # анотация для подсчета количества файлов
+        total_size=Coalesce(
+            Sum("files__size"), Value(0)
+        ),  # аннотация для подсчета суммы размеров файлов, Coalesce для замены NULL на 0
+    ).order_by("id")
+
+
+def update_user_admin_status(actor, target_user_id, is_staff):
+    """
+    Обновляет статус пользователя в админке
+
+    :param actor: Пользователь, который выполняет действие
+    :type actor: User
+    :param target_user_id: ID пользователя, которому нужно обновить статус
+    :type target_user_id: int
+    :param is_staff: Новый статус пользователя
+    :type is_staff: bool
+    """
+    try:
+        target_user = User.objects.get(id=target_user_id)
+    except User.DoesNotExist:
+        raise NotFound("Пользователь не найден.")
+
+    if target_user.id == actor.id:
+        raise PermissionDenied("Вы не можете изменить свой собственный статус.")
+
+    target_user.is_staff = is_staff
+    target_user.save(update_fields=["is_staff"])
+
+    return target_user

@@ -4,12 +4,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied, NotFound
-from django.urls import path
+from django.urls import path, reverse
 
 from .services import (
     delete_user_file,
     get_downloadable_file,
     get_files_for_listing,
+    get_or_create_public_token,
     get_user_file,
     mark_file_as_downloaded,
     update_user_file,
@@ -149,8 +150,40 @@ class FileDownloadApi(APIView):
             )
 
 
+class FilePublicLinkApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, file_id, *args, **kwargs):
+        try:
+            stored_file = get_or_create_public_token(request.user, file_id)
+        except (NotFound, PermissionDenied) as error:
+            return Response({"detail": str(error)}, status=error.status_code)
+
+        # Создаем относительный URL для скачивания файла
+        relative_url = reverse(
+            "public-file-download",  # имя URL из public_api.py
+            kwargs={"token": stored_file.public_token},  # передаем токен в URL
+        )
+
+        # Преобразуем относительный URL в абсолютный, добавив домен и протокол
+        public_url = request.build_absolute_uri(relative_url)
+
+        return Response(
+            {
+                "public_token": stored_file.public_token,
+                "public_url": public_url,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 urlpatterns = [
     path("", FileListCreateApi.as_view(), name="file-list-create"),
     path("<int:file_id>/", FileDetailApi.as_view(), name="file-detail"),
     path("<int:file_id>/download/", FileDownloadApi.as_view(), name="file-download"),
+    path(
+        "<int:file_id>/public-link/",
+        FilePublicLinkApi.as_view(),
+        name="file-public-link",
+    ),
 ]

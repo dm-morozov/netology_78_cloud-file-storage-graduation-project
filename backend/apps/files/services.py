@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from rest_framework.exceptions import PermissionDenied, NotFound
+from secrets import token_urlsafe
 
 User = get_user_model()
 
@@ -116,3 +117,46 @@ def mark_file_as_downloaded(stored_file) -> None:
 
     # Используем update_fields - обновляем только одну колонку для производительности
     stored_file.save(update_fields=["last_downloaded_at"])
+
+
+def generate_unique_token() -> str:
+    """
+    Генерирует уникальный public_token.
+    """
+    while True:
+        token = token_urlsafe(24)
+        if not StoredFile.objects.filter(public_token=token).exists():
+            return token
+
+
+def get_or_create_public_token(user, file_id) -> StoredFile:
+    """
+    Возвращает public_token для файла.
+    """
+    stored_file = get_user_file(user=user, file_id=file_id)
+    if not stored_file.public_token:
+        stored_file.public_token = generate_unique_token()
+        stored_file.save(update_fields=["public_token"])
+
+    return stored_file
+
+
+def get_public_downloadable_file(token) -> StoredFile:
+    try:
+        if not token:
+            raise NotFound("Токен не предоставлен.")
+
+        stored_file = StoredFile.objects.get(public_token=token)
+    except StoredFile.DoesNotExist:
+        raise NotFound("Файл по данной ссылке не найден.")
+
+    # Проверяем физическое наличие файла
+    # У FileField есть встроенный bool(file), который проверяет наличие имени
+    if not stored_file.file:
+        raise NotFound("Файл не найден на сервере. Файл не привязан к записи в БД.")
+
+    # и метод storage.exists() для проверки диска
+    if not stored_file.file.storage.exists(stored_file.file.name):
+        raise NotFound("Файл не найден на сервере. Файл отсутствует на диске.")
+
+    return stored_file

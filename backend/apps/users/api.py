@@ -16,6 +16,7 @@ from .serializers import (
     UserSerializer,
 )
 from .services import (
+    delete_user,
     get_users_for_admin_listing,
     login_user,
     logout_user,
@@ -128,14 +129,26 @@ class AdminUserDetailApi(APIView):
         output_serializer = UserSerializer(instance=target_user)
         return Response(output_serializer.data, status=status.HTTP_200_OK)
 
+    def delete(self, request, user_id, *args, **kwargs):
+        try:
+            delete_user(actor=request.user, target_user_id=user_id)
+        except (NotFound, PermissionDenied) as error:
+            return Response(
+                {"detail": str(error)},
+                status=error.status_code,
+            )
+
+        return Response(
+            {"message": "Пользователь успешно удалён"},
+            status=status.HTTP_200_OK,
+        )
+
 
 urlpatterns = [
     path("register/", RegisterApi.as_view(), name="register"),
     path("login/", LoginApi.as_view(), name="login"),
     path("me/", MeApi.as_view(), name="me"),
     path("logout/", LogoutApi.as_view(), name="logout"),
-    path("users/", AdminUserList.as_view(), name="admin_user_list"),
-    path(
-        "users/<int:user_id>/", AdminUserDetailApi.as_view(), name="admin_user_detail"
-    ),
+    path("", AdminUserList.as_view(), name="admin_user_list"),
+    path("<int:user_id>/", AdminUserDetailApi.as_view(), name="admin_user_detail"),
 ]

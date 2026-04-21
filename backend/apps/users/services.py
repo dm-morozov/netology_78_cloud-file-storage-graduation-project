@@ -74,3 +74,21 @@ def update_user_admin_status(actor, target_user_id, is_staff):
     target_user.save(update_fields=["is_staff"])
 
     return target_user
+
+
+def delete_user(actor, target_user_id) -> None:
+    try:
+        target_user = User.objects.get(id=target_user_id)
+    except User.DoesNotExist:
+        raise NotFound("Пользователь не найден.")
+
+    if target_user.id == actor.id:
+        raise PermissionDenied("Вы не можете удалить самого себя.")
+
+    for file in target_user.files.all():
+        file.file.delete(save=False)  # удаляем файлы без сохранения в базе данных
+        # Без сохранения потому, что через доли секунды мы всеравно удалим все Записи из БД
+        # Чтобы не делать дополнительные запросы к БД и удалять по одной записи
+        # Мы вначале удаляем все файлы и потом удаляем всего пользователя целиков
+        # Вместе с записыми о файлах в БД
+    target_user.delete()

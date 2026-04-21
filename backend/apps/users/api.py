@@ -74,7 +74,7 @@ class MeApi(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        serializer = UserSerializer(request.user)
+        serializer = UserSerializer(instance=request.user)
         return Response(serializer.data)
 
 

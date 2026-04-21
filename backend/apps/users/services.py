@@ -51,6 +51,16 @@ def get_users_for_admin_listing():
     ).order_by("id")
 
 
+def get_admin_user_with_stats(user_id):
+    try:
+        return User.objects.annotate(
+            files_count=Count("files"),
+            total_size=Coalesce(Sum("files__size"), Value(0)),
+        ).get(id=user_id)
+    except User.DoesNotExist:
+        raise NotFound("Пользователь не найден.")
+
+
 def update_user_admin_status(actor, target_user_id, is_staff):
     """
     Обновляет статус пользователя в админке
@@ -77,6 +87,14 @@ def update_user_admin_status(actor, target_user_id, is_staff):
 
 
 def delete_user(actor, target_user_id) -> None:
+    """
+    Удаляет пользователя и все его физические файлы из хранилища.
+
+    :param actor: Пользователь, который выполняет действие
+    :type actor: User
+    :param target_user_id: ID пользователя, которого нужно удалить
+    :type target_user_id: int
+    """
     try:
         target_user = User.objects.get(id=target_user_id)
     except User.DoesNotExist:
@@ -85,8 +103,10 @@ def delete_user(actor, target_user_id) -> None:
     if target_user.id == actor.id:
         raise PermissionDenied("Вы не можете удалить самого себя.")
 
-    for file in target_user.files.all():
-        file.file.delete(save=False)  # удаляем файлы без сохранения в базе данных
+    for stored_file in target_user.files.all():
+        stored_file.file.delete(
+            save=False
+        )  # удаляем файлы без сохранения в базе данных
         # Без сохранения потому, что через доли секунды мы всеравно удалим все Записи из БД
         # Чтобы не делать дополнительные запросы к БД и удалять по одной записи
         # Мы вначале удаляем все файлы и потом удаляем всего пользователя целиков

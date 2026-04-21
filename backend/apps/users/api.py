@@ -17,6 +17,7 @@ from .serializers import (
 )
 from .services import (
     delete_user,
+    get_admin_user_with_stats,
     get_users_for_admin_listing,
     login_user,
     logout_user,
@@ -126,7 +127,8 @@ class AdminUserDetailApi(APIView):
                 status=error.status_code,
             )
 
-        output_serializer = UserSerializer(instance=target_user)
+        target_admin_user = get_admin_user_with_stats(user_id=user_id)
+        output_serializer = AdminUserListSerializer(instance=target_admin_user)
         return Response(output_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, user_id, *args, **kwargs):

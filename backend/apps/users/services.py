@@ -1,8 +1,11 @@
+import logging
 from .models import User
 from django.contrib.auth import login, authenticate, logout
 from django.db.models import Count, Sum, Value
 from django.db.models.functions import Coalesce
 from rest_framework.exceptions import NotFound, PermissionDenied
+
+logger = logging.getLogger(__name__)
 
 
 def register_user(validated_data) -> User:
@@ -16,9 +19,24 @@ def register_user(validated_data) -> User:
     :rtype: User
     """
 
+    logger.info(
+        "Начата регистрация пользователя. username=%s email=%s",
+        validated_data.get("username"),
+        validated_data.get("email"),
+    )
+
     # Используем именно create_user:
     # пароль хешируется, используется встроенная логика Django
-    return User.objects.create_user(**validated_data)
+    user = User.objects.create_user(**validated_data)
+
+    logger.info(
+        "Пользователь успешно зарегистрирован. user_id=%s username=%s email=%s",
+        user.id,
+        user.username,
+        user.email,
+    )
+
+    return user
 
 
 def login_user(request, username, password) -> User | None:

@@ -1,3 +1,5 @@
+import logging
+from secrets import token_urlsafe
 from pathlib import Path
 from uuid import uuid4
 
@@ -6,7 +8,8 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from rest_framework.exceptions import PermissionDenied, NotFound
-from secrets import token_urlsafe
+
+logger = logging.getLogger(__name__)  # Получаем логгер для текущего модуля
 
 User = get_user_model()
 
@@ -15,6 +18,13 @@ def upload_file(*, owner, uploaded_file, comment=""):
     """
     Сохраняет загруженный пользователем файл на диск и создаёт запись в БД.
     """
+
+    logger.info(
+        "Начата загрузка файла. user_id=%s user_name=%s original_file_name=%s",
+        owner.id,
+        owner.username,
+        uploaded_file.name,
+    )
 
     original_name = uploaded_file.name
     suffix = Path(original_name).suffix
@@ -33,6 +43,14 @@ def upload_file(*, owner, uploaded_file, comment=""):
     )  # file.save(имя_которое_хочешь, файл)
     # Улетает в FileField Нашей модели, где потом мы вызываем функцию
     stored_file.save()
+
+    logger.info(
+        "Файл успешно загружен. user_id=%s user_name=%s file_id=%s stored_name=%s",
+        owner.id,
+        owner.username,
+        stored_file.id,
+        stored_name,
+    )
 
     return stored_file
 
@@ -70,8 +88,21 @@ def delete_user_file(owner, file_id):
     """
     stored_file = get_user_file(owner, file_id)
 
+    logger.info(
+        "Начато удаление файла. actor_id=%s file_id=%s owner_id=%s",
+        owner.id,
+        stored_file.id,
+        stored_file.owner_id,
+    )
+
     stored_file.file.delete(save=False)  # удаляем файл с диска, не трогая запись в БД
     stored_file.delete()  # удаляем запись из БД
+
+    logger.info(
+        "Файл успешно удалён. actor_id=%s file_id=%s",
+        owner.id,
+        file_id,
+    )
 
 
 def update_user_file(owner, file_id, data: dict):
@@ -118,6 +149,13 @@ def mark_file_as_downloaded(stored_file) -> None:
     # Используем update_fields - обновляем только одну колонку для производительности
     stored_file.save(update_fields=["last_downloaded_at"])
 
+    logger.info(
+        "Обновлено время скачивания файла. file_id=%s owner_id=%s last_downloaded_at=%s",
+        stored_file.id,
+        stored_file.owner_id,
+        stored_file.last_downloaded_at,
+    )
+
 
 def generate_unique_token() -> str:
     """
@@ -137,6 +175,20 @@ def get_or_create_public_token(user, file_id) -> StoredFile:
     if not stored_file.public_token:
         stored_file.public_token = generate_unique_token()
         stored_file.save(update_fields=["public_token"])
+
+        logger.info(
+            "Создан новый public_token. actor_id=%s actor_username=%s file_id=%s",
+            user.id,
+            user.username,
+            stored_file.id,
+        )
+    else:
+        logger.info(
+            "Возвращён существующий public_token. actor_id=%s actor_username=%s file_id=%s",
+            user.id,
+            user.username,
+            stored_file.id,
+        )
 
     return stored_file
 

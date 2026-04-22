@@ -246,7 +246,7 @@ class FileApiCase(APITestCase):
 
     def test_create_public_link_success(self):
         """
-        Тест проверяет успешное создание публичного ссылки для файла.
+        Тест проверяет успешное создание публичной ссылки для файла.
         """
 
         upload_response = self.create_test_file()

@@ -29,6 +29,13 @@ class FileApiCase(APITestCase):
             email="test@example.com",
             password="Test_123",
         )
+
+        self.other_user = User.objects.create_user(
+            username="otheruser",
+            email="other@example.com",
+            password="Other_123",
+        )
+
         self.client.login(username="testuser", password="Test_123")
 
     def tearDown(self):
@@ -54,6 +61,10 @@ class FileApiCase(APITestCase):
             },
             format="multipart",
         )
+
+    def login_as(self, username, password):
+        self.client.logout()
+        self.client.login(username=username, password=password)
 
     def test_upload_file_success(self):
 
@@ -298,20 +309,13 @@ class FileApiCase(APITestCase):
         Тест проверяет, что пользователь видит только свои файлы.
         """
 
-        other_user = User.objects.create_user(
-            username="otheruser",
-            email="other@example.com",
-            password="Other_123",
-        )
-
         self.create_test_file(
             name="my_file.txt",
             content=b"My file",
             comment="Мой файл",
         )
 
-        self.client.logout()
-        self.client.login(username="otheruser", password="Other_123")
+        self.login_as("otheruser", "Other_123")
 
         self.create_test_file(
             name="other_file.txt",
@@ -319,8 +323,7 @@ class FileApiCase(APITestCase):
             comment="Чужой файл",
         )
 
-        self.client.logout()
-        self.client.login(username="testuser", password="Test_123")
+        self.login_as("testuser", "Test_123")
 
         response = self.client.get(reverse("file-list-create"))
 
@@ -359,3 +362,154 @@ class FileApiCase(APITestCase):
 
         # После скачивания поле должно заполниться
         self.assertIsNotNone(stored_file.last_downloaded_at)
+
+    def test_user_cannot_get_detail_of_other_user_file(self):
+        """
+        Тест проверяет, что обычный пользователь не может получить чужой файл.
+        """
+
+        self.login_as(username="otheruser", password="Other_123")
+
+        self.create_test_file(
+            name="other_file.txt",
+            content=b"Other file content",
+            comment="Файл другого пользователя",
+        )
+
+        other_file = StoredFile.objects.get(owner=self.other_user)
+
+        self.login_as(username="testuser", password="Test_123")
+
+        response = self.client.get(
+            reverse("file-detail", kwargs={"file_id": other_file.id})
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN, response.data)
+        self.assertEqual(
+            response.data["detail"], "У вас нет прав для доступа к этому файлу."
+        )
+
+    def test_user_cannot_update_other_user_file(self):
+        """
+        Тест проверяет, что обычный пользователь не может изменить чужой файл.
+        """
+
+        self.login_as(username="otheruser", password="Other_123")
+
+        self.create_test_file(
+            name="other_file.txt",
+            content=b"Other file content",
+            comment="Файл другого пользователя",
+        )
+
+        other_file = StoredFile.objects.get(owner=self.other_user)
+
+        self.login_as(username="testuser", password="Test_123")
+
+        response = self.client.patch(
+            reverse("file-detail", kwargs={"file_id": other_file.id}),
+            {
+                "original_name": "hacked.txt",
+                "comment": "Попытка изменить чужой файл",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN, response.data)
+        self.assertEqual(
+            response.data["detail"], "У вас нет прав для доступа к этому файлу."
+        )
+
+        other_file.refresh_from_db()
+        self.assertEqual(other_file.original_name, "other_file.txt")
+        self.assertEqual(other_file.comment, "Файл другого пользователя")
+
+    def test_user_cannot_delete_other_user_file(self):
+        """
+        Тест проверяет, что обычный пользователь не может удалить чужой файл.
+        """
+
+        self.login_as(username="otheruser", password="Other_123")
+
+        self.create_test_file(
+            name="other_file.txt",
+            content=b"Other file content",
+            comment="Файл другого пользователя",
+        )
+
+        other_file = StoredFile.objects.get(owner=self.other_user)
+        file_path = Path(other_file.file.path)
+
+        self.assertTrue(file_path.exists())
+
+        self.login_as(username="testuser", password="Test_123")
+
+        response = self.client.delete(
+            reverse("file-detail", kwargs={"file_id": other_file.id})
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN, response.data)
+        self.assertEqual(
+            response.data["detail"], "У вас нет прав для доступа к этому файлу."
+        )
+
+        self.assertTrue(StoredFile.objects.filter(id=other_file.id).exists())
+        self.assertTrue(file_path.exists())
+
+    def test_user_cannot_list_other_user_files_by_owner_id(self):
+        """
+        Тест проверяет, что обычный пользователь не может смотреть чужое хранилище через owner_id.
+        """
+
+        self.login_as(username="otheruser", password="Other_123")
+
+        self.create_test_file(
+            name="other_file.txt",
+            content=b"Other file content",
+            comment="Файл другого пользователя",
+        )
+
+        self.login_as(username="testuser", password="Test_123")
+
+        response = self.client.get(
+            reverse("file-list-create"),
+            {"owner_id": self.other_user.id},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN, response.data)
+        self.assertEqual(
+            response.data["detail"],
+            "У вас нет прав для просмотра чужого хранилища.",
+        )
+
+    def test_admin_can_list_other_user_files_by_owner_id(self):
+        """
+        Тест проверяет, что администратор может смотреть чужое хранилище через owner_id.
+        """
+
+        User.objects.create_user(
+            username="adminuser",
+            email="admin@example.com",
+            password="Admin_123",
+            is_staff=True,
+        )
+
+        self.login_as(username="otheruser", password="Other_123")
+
+        self.create_test_file(
+            name="other_file.txt",
+            content=b"Other file content",
+            comment="Файл другого пользователя",
+        )
+
+        self.login_as(username="adminuser", password="Admin_123")
+
+        response = self.client.get(
+            reverse("file-list-create"),
+            {"owner_id": self.other_user.id},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["original_name"], "other_file.txt")
+        self.assertEqual(response.data[0]["comment"], "Файл другого пользователя")

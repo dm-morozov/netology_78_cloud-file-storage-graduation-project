@@ -1,0 +1,81 @@
+/* 1. Карточка-контейнер */
+.container {
+  max-width: 400px;
+  margin: 10vh auto; /* Отступ сверху 10% от высоты экрана, по бокам - авто (центр) */
+  padding: 40px;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); /* Мягкая, дорогая тень */
+  text-align: center;
+  font-family: 'Inter', system-ui, sans-serif; /* Современный чистый шрифт */
+}
+
+.container h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+/* 2. Структура формы */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 3. Поля ввода */
+.input {
+  padding: 14px 16px;
+  font-size: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Эффект, когда инпут активен */
+.input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15); /* Мягкое внешнее свечение */
+}
+
+/* 4. Кнопка */
+.button {
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px; /* Чуть отделим кнопку от инпутов */
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.button:hover {
+  background-color: #0056b3; /* Чуть темнее при наведении */
+}
+
+.button:active {
+  transform: scale(0.98); /* Микро-анимация "продавливания" клика */
+}
+
+/* 5. Ссылка на регистрацию */
+.container a {
+  display: inline-block;
+  margin-top: 24px;
+  color: #6c757d;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.container a:hover {
+  color: #007bff; /* Ссылка синеет при наведении */
+}

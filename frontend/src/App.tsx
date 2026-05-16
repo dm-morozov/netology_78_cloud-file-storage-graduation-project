@@ -25,7 +25,7 @@ const App = () => {
     const checkAuth = async () => {
       try {
         // Стучимся на эндпоинт, который мы написали в Django.
-        const response = await api.get('users/me/')
+        const response = await api.get('/users/me/')
         dispatch(loginSuccess(response.data))
       } catch (error: unknown) {
         const err = error as AxiosError

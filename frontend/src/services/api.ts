@@ -3,7 +3,7 @@ import axios from 'axios'
 // Создаем "настроенную" версию axios
 export const api = axios.create({
   // Указываем базовый URL твоего Django сервера
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: 'http://localhost:8000/api',
   // Разрешаем передачу куки (сессий) между фронтом и бэком
   withCredentials: true,
 })

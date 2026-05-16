@@ -20,6 +20,14 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    // Добавляем наши кастомные правила
+    rules: {
+      'padding-line-between-statements': [
+        'warn',
+        { blankLine: 'always', prev: 'import', next: '*' },
+        { blankLine: 'any', prev: 'import', next: 'import' },
+      ],
+    },
   },
   // Добавляем правила Prettier в самый конец
   eslintPluginPrettierRecommended,

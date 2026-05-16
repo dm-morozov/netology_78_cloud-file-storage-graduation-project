@@ -4,6 +4,8 @@ import { api } from '../../services/api'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch } from '../../store/store'
 import type { AxiosError } from 'axios'
+import { loginSuccess } from '../../store/authSlice'
+import ErrorView from '../../components/ErrorView/ErrorView'
 
 export const RegisterForm = () => {
   const [username, setUsername] = useState('')
@@ -34,8 +36,15 @@ export const RegisterForm = () => {
         last_name: lastName, // Трансформируем camelCase в snake_case специально для Django
       })
 
-      // Перенаправляем пользователя на страницу логина.
-      navigate('/login')
+      // Выполняем физический вход, чтобы бэкенд выдал нам куку
+      await api.post('/users/login/', { username, password })
+
+      // Автоматический логин после регистрации
+      const meResponse = await api.get('/users/me/')
+      dispatch(loginSuccess(meResponse.data))
+
+      // Перенаправляем пользователя прямиком в хранилище
+      navigate('/storage')
     } catch (err: unknown) {
       // Приводим тип к AxiosError и описываем форму JSON-данных, которую возвращает Django
       const axiosError = err as AxiosError<{
@@ -71,6 +80,9 @@ export const RegisterForm = () => {
   return (
     <div className={styles.container}>
       <h2>Регистрация в MyCloud</h2>
+
+      {error && <ErrorView message={error} />}
+
       <form className={styles.form} onSubmit={handleSubmit}>
         <input
           className={styles.input}

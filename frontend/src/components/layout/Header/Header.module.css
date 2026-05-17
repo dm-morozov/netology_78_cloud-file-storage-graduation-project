@@ -33,12 +33,34 @@
   text-decoration: none;
   color: #4a4a4a;
   font-weight: 500;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
   display: inline-block;
 }
 
 /* При наведении ссылка меняет цвет и микро-поднимается вверх */
 .link:hover {
   color: #007bff;
+  transform: translateY(-1px);
+}
+
+/* Делаем кнопку похожей на ссылку, но с красным акцентом */
+.logoutButton {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 16px;
+  color: #4a4a4a;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.logoutButton:hover {
+  color: #c82333;
   transform: translateY(-1px);
 }

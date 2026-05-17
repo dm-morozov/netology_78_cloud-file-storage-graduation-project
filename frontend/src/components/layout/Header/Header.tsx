@@ -1,9 +1,20 @@
-import { Link } from 'react-router-dom'
-import { useAppSelector } from '../../../store/store'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAppDispatch, useAppSelector } from '../../../store/store'
 import styles from './Header.module.css'
+import { logoutUser } from '../../../store/authSlice'
 
 export const Header = () => {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth)
+
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    // Командуем Redux'у запустить Thunk (он сам сходит на сервер и почистит стейт)
+    await dispatch(logoutUser())
+
+    navigate('/')
+  }
 
   return (
     <header className={styles.header}>
@@ -34,6 +45,10 @@ export const Header = () => {
                   Админка
                 </Link>
               )}
+
+              <button onClick={handleLogout} className={styles.logoutButton}>
+                Выйти
+              </button>
             </>
           )}
         </nav>

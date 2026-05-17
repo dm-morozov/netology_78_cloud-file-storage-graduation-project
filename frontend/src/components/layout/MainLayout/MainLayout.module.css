@@ -1,0 +1,19 @@
+/* Делаем так, чтобы весь каркас занимал минимум 100% высоты экрана (100vh) */
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* flex-grow: 1 заставляет <main> занять всё свободное пространство, выталкивая футер вниз */
+.main {
+  flex-grow: 1;
+  background-color: #f8f9fa; /* Мягкий фон для всех страниц */
+}
+
+/* Ограничиваем ширину контента и задаем внутренние отступы */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px;
+}

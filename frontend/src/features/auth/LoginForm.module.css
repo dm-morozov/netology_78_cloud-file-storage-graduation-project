@@ -1,4 +1,3 @@
-/* 1. Карточка-контейнер */
 .container {
   max-width: 400px;
   margin: 10vh auto; /* Отступ сверху 10% от высоты экрана, по бокам - авто (центр) */
@@ -7,7 +6,6 @@
   border-radius: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); /* Мягкая, дорогая тень */
   text-align: center;
-  font-family: 'Inter', system-ui, sans-serif; /* Современный чистый шрифт */
 }
 
 .container h2 {

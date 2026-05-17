@@ -1,0 +1,24 @@
+/* 1. Сброс базовых отступов (CSS Reset) */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 2. Глобальные стили для всего приложения */
+body {
+  /* Задаем шрифт ОДИН РАЗ здесь, и он применяется ко всему приложению */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Делаем фон чуть-чуть сероватым, чтобы белые карточки выделялись */
+  background-color: #f8f9fa; 
+  
+  /* Сглаживание шрифтов на Mac/Windows */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Чтобы box-sizing наследовался на все элементы */
+*, *::before, *::after {
+  box-sizing: inherit;
+}

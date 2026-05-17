@@ -91,6 +91,8 @@ export const RegisterForm = () => {
           required // HTML5 валидация: браузер не даст отправить пустую форму
           value={username}
           onChange={(e) => setUsername(e.target.value)} // На каждый клик обновляем state
+          name='username'
+          autoComplete='off'
         />
         <input
           className={styles.input}
@@ -99,6 +101,8 @@ export const RegisterForm = () => {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          name='email'
+          autoComplete='off'
         />
         <input
           className={styles.input}
@@ -107,12 +111,16 @@ export const RegisterForm = () => {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          name='password'
+          autoComplete='off'
         />
         <input
           className={styles.input}
           type='text'
           placeholder='Имя (необязательно)' // Для этих полей required НЕ пишем
           value={firstName}
+          name='first_name'
+          autoComplete='off'
           onChange={(e) => setFirstName(e.target.value)}
         />
         <input
@@ -120,6 +128,8 @@ export const RegisterForm = () => {
           type='text'
           placeholder='Фамилия (необязательно)'
           value={lastName}
+          name='last_name'
+          autoComplete='off'
           onChange={(e) => setLastName(e.target.value)}
         />
         <button className={styles.button} type='submit' disabled={isLoading}>

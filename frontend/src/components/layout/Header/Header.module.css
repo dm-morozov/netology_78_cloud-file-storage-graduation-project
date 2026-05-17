@@ -1,0 +1,44 @@
+.header {
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* Легкая тень */
+  position: sticky; /* Шапка всегда приклеена к верху */
+  top: 0;
+  z-index: 100;
+}
+
+/* Контейнер такой же как в футере для идеального выравнивания по вертикали */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo a {
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #1a1a1a;
+  letter-spacing: -0.5px; /* Чуть сдвигаем буквы для современного вида */
+}
+
+.nav {
+  display: flex;
+  gap: 32px; /* Чуть больше воздуха между ссылками */
+}
+
+.link {
+  text-decoration: none;
+  color: #4a4a4a;
+  font-weight: 500;
+  transition: color 0.2s ease, transform 0.2s ease;
+  display: inline-block;
+}
+
+/* При наведении ссылка меняет цвет и микро-поднимается вверх */
+.link:hover {
+  color: #007bff;
+  transform: translateY(-1px);
+}

@@ -3,7 +3,7 @@ import { useAppSelector } from '../../../store/store'
 import styles from './Header.module.css'
 
 export const Header = () => {
-  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
 
   return (
     <header className={styles.header}>
@@ -29,9 +29,11 @@ export const Header = () => {
               <Link to='/storage' className={styles.link}>
                 Хранилище
               </Link>
-              <Link to='/admin' className={styles.link}>
-                Админка
-              </Link>
+              {user?.is_staff && (
+                <Link to='/admin' className={styles.link}>
+                  Админка
+                </Link>
+              )}
             </>
           )}
         </nav>

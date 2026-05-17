@@ -4,7 +4,7 @@ import styles from './Footer.module.css'
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear()
-  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
 
   return (
     <footer className={styles.footer}>
@@ -31,7 +31,7 @@ export const Footer = () => {
             ) : (
               <>
                 <Link to='/storage'>Мои файлы</Link>
-                <Link to='/admin'>Админ-панель</Link>
+                {user?.is_staff && <Link to='/admin'>Админ-панель</Link>}
               </>
             )}
           </div>

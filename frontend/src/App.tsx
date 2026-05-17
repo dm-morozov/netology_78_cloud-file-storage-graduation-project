@@ -11,6 +11,7 @@ import { api } from './services/api'
 import { loginSuccess, logoutSuccess, setLoading } from './store/authSlice'
 import type { AxiosError } from 'axios'
 import Spinner from './components/Spinner/Spinner'
+import { ProtectedRoute } from './components/ProtectedRoute/ProtectedRoute'
 
 const App = () => {
   // Достаем флаг загрузки
@@ -50,8 +51,25 @@ const App = () => {
           <Route path='/' element={<HomePage />} />
           <Route path='/login' element={<LoginPage />} />
           <Route path='/register' element={<RegisterPage />} />
-          <Route path='/storage' element={<StoragePage />} />
-          <Route path='/admin' element={<AdminPage />} />
+
+          {/* Приватный маршрут (только для авторизованных) */}
+          <Route
+            path='/storage'
+            element={
+              <ProtectedRoute>
+                <StoragePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path='/admin'
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -45,7 +45,6 @@
   transform: translateY(-1px);
 }
 
-/* Делаем кнопку похожей на ссылку, но с красным акцентом */
 .logoutButton {
   background: none;
   border: none;

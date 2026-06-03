@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { api } from '../services/api'
-import { setLoading } from './authSlice'
 import type { AxiosError } from 'axios'
 
 // Описываем, как выглядит один файл, приходящий с сервера
@@ -32,10 +31,10 @@ const initialState: FilesState = {
 // Асинхронный Thunk для получения списка файлов с сервера
 export const fetchFiles = createAsyncThunk(
   'files/fetchAll',
-  async (ownerId: number | undefined, { rejectWithValue }) => {
+  async (ownerId, { rejectWithValue }) => {
     try {
       const response = await api.get<StoredFile[]>('/files/', {
-        params: ownerId ? { owner_id: ownerId } : {},
+        params: typeof ownerId === 'number' ? { owner_id: ownerId } : {},
       })
 
       return response.data
@@ -44,6 +43,26 @@ export const fetchFiles = createAsyncThunk(
       const err = error as AxiosError<{ detail?: string }>
 
       return rejectWithValue(err.response?.data?.detail || 'Не удалось загрузить список файлов')
+    }
+  }
+)
+
+export const deleteFile = createAsyncThunk<number, number>(
+  'files/delete',
+  async (fileId: number, { rejectWithValue }) => {
+    try {
+      // запрос к Django. Axios-клиент `api` сам подставит базовый URL и CSRF-токен
+      await api.delete(`/files/${fileId}/`)
+
+      // Если запрос успешный, возвращаем ID удаленного файла.
+      // Это значение (payload) перейдет на следующий этап в редюсер.
+      return fileId
+    } catch (error: unknown) {
+      // Если сервер вернул ошибку, то перехватываем ее
+      const err = error as AxiosError<{ detail?: string }>
+
+      // И возвращаем текст ошибки через специальный хелпер rejectWithValue
+      return rejectWithValue(err.response?.data?.detail || 'Не удалось удалить файл')
     }
   }
 )
@@ -77,6 +96,21 @@ const filesSlice = createSlice({
       .addCase(fetchFiles.rejected, (state, action) => {
         state.isLoading = false
         state.error = (action.payload as string) || 'Ошибка загрузки списка файлов'
+      })
+
+      // Обработка удаления файла
+      .addCase(deleteFile.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(deleteFile.fulfilled, (state, action: PayloadAction<number>) => {
+        state.isLoading = false
+        // Оставляем в списке только те файлы, чей id не совпадает с удаленным
+        state.items = state.items.filter((file) => file.id !== action.payload)
+      })
+      .addCase(deleteFile.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = (action.payload as string) || 'Ошибка при удалении файла'
       })
   },
 })

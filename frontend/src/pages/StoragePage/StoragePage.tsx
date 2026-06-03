@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/store'
-import { fetchFiles, deleteFile } from '../../store/filesSlice'
+import { fetchFiles, deleteFile, downloadFile } from '../../store/filesSlice'
 import Spinner from '../../components/Spinner/Spinner'
 import ErrorView from '../../components/ErrorView/ErrorView'
 
@@ -20,6 +20,10 @@ export const StoragePage = () => {
     if (window.confirm(`Вы уверены, что хотите удалить файл "${name}"?`)) {
       dispatch(deleteFile(id))
     }
+  }
+
+  const handleDownload = (id: number, name: string) => {
+    dispatch(downloadFile({ fileId: id, fileName: name }))
   }
 
   return (
@@ -57,6 +61,12 @@ export const StoragePage = () => {
 
                   {/* Контейнер для кнопок управления файлом */}
                   <div className={styles.fileActions}>
+                    <button
+                      className={styles.downloadButton}
+                      onClick={() => handleDownload(file.id, file.original_name)}
+                    >
+                      Скачать
+                    </button>
                     <button
                       onClick={() => handleDelete(file.id, file.original_name)}
                       className={styles.deleteButton}

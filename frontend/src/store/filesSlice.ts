@@ -47,6 +47,7 @@ export const fetchFiles = createAsyncThunk(
   }
 )
 
+// Создаем асинхронный Thunk для удаления файла
 export const deleteFile = createAsyncThunk<number, number>(
   'files/delete',
   async (fileId: number, { rejectWithValue }) => {
@@ -63,6 +64,54 @@ export const deleteFile = createAsyncThunk<number, number>(
 
       // И возвращаем текст ошибки через специальный хелпер rejectWithValue
       return rejectWithValue(err.response?.data?.detail || 'Не удалось удалить файл')
+    }
+  }
+)
+
+// Асинхронный Thunk для скачивания файла
+// <void, { fileId: number; fileName: string }> означает:
+// ничего не возвращаем в стейт Redux (void), на вход принимаем объект с ID и именем файла
+export const downloadFile = createAsyncThunk<void, { fileId: number; fileName: string }>(
+  'files/download',
+  async ({ fileId, fileName }, { rejectWithValue }) => {
+    try {
+      // Запрашиваем файл у Django как Blob (бинарные данные)
+      // axios будет использовать наш AppAxios, где уже настроены куки
+      const response = await api.get(`/files/${fileId}/download/`, { responseType: 'blob' })
+
+      // Создаем временную ссылку в памяти браузера, указывающую на этот Blob
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+
+      // Создаем временный, невидимый элемент <a> для симуляции скачивания
+      const link = document.createElement('a')
+      link.href = url
+
+      // Скрываем элемент, чтобы он не мешал пользователю
+      link.style.display = 'none'
+
+      // Задаем оригинальное имя файла, под которым он сохранится на компьютер
+      link.setAttribute('download', fileName)
+
+      // Встраиваем ссылку в DOM-дерево
+      document.body.appendChild(link)
+
+      // Инициируем программный клик по ссылке — это запустит скачивание
+      link.click()
+
+      // Очищаем созданную ссылку и URL
+      link.remove()
+      // освобождаем память браузера от Blob-объекта
+      window.URL.revokeObjectURL(url)
+
+      // В редюсер для success-ветки мы ничего не возвращаем (void)
+      // Это сигнал, что браузер сам позаботился о скачивании файла.
+      return
+    } catch (error: unknown) {
+      // Если произошла ошибка (например, 404 или 403), перехватываем ее
+      const err = error as AxiosError<{ detail?: string }>
+
+      // Возвращаем текст ошибки, который будет передан в редюсер
+      return rejectWithValue(err.response?.data?.detail || 'Не удалось скачать файл')
     }
   }
 )

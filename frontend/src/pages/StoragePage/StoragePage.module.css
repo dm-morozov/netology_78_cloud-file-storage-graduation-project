@@ -151,3 +151,23 @@
   border-color: #ef4444;
   box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
 }
+
+/* Стилизация кнопки скачивания файла */
+.downloadButton {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 550;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-color: #eff6ff;
+  color: #3b82f6;
+  border: 1px solid #dbeafe;
+}
+/* Эффект при наведении курсора */
+.downloadButton:hover {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
+}

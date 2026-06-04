@@ -115,6 +115,23 @@ export const downloadFile = createAsyncThunk<void, { fileId: number; fileName: s
     }
   }
 )
+// На входе Thunk будет принимать объект с ID файла и полями, которые мы хотим изменить
+export const updateFile = createAsyncThunk<
+  StoredFile,
+  { fileId: number; data: { original_name?: string; comment?: string | null } }
+>('files/update', async ({ fileId, data }, { rejectWithValue }) => {
+  try {
+    // Отправляем PATCH запрос на /files/<fileId>/ с объектом измененных полей
+    const response = await api.patch<StoredFile>(`/files/${fileId}/`, data)
+
+    // Возвращаем измененный объект файла, который пришел с бэкенда
+    return response.data
+  } catch (error: unknown) {
+    const err = error as AxiosError<{ detail?: string }>
+
+    return rejectWithValue(err.response?.data?.detail || 'Не удалось обновить файл')
+  }
+})
 
 // Создаем слайс для управления состоянием файлов
 
@@ -161,6 +178,25 @@ const filesSlice = createSlice({
         state.isLoading = false
         state.error = (action.payload as string) || 'Ошибка при удалении файла'
       })
+
+      // Обновление файла (переименование или изменение комментария)
+      .addCase(updateFile.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(updateFile.fulfilled, (state, action: PayloadAction<StoredFile>) => {
+        state.isLoading = false
+        // Пробегаем по списку: заменяем старую версию файла на новую по совпадению ID
+        state.items = state.items.map((file) =>
+          file.id === action.payload.id ? action.payload : file
+        )
+      })
+      .addCase(updateFile.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = (action.payload as string) || 'Ошибка при обновлении файла'
+      })
+
+    //
   },
 })
 

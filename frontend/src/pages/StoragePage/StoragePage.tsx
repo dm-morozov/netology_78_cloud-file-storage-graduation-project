@@ -1,6 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/store'
-import { fetchFiles, deleteFile, downloadFile, updateFile } from '../../store/filesSlice'
+import {
+  fetchFiles,
+  deleteFile,
+  downloadFile,
+  updateFile,
+  uploadFile,
+} from '../../store/filesSlice'
 import Spinner from '../../components/Spinner/Spinner'
 import ErrorView from '../../components/ErrorView/ErrorView'
 
@@ -22,6 +28,14 @@ export const StoragePage = () => {
   const [editName, setEditName] = useState('')
   // Временное хранилище для комментария файла при редактировании
   const [editComment, setEditComment] = useState('')
+
+  // Состояния для загрузки нового файла
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploadComment, setUploadComment] = useState<string>('')
+  const [isDragActive, setIsDragActive] = useState<boolean>(false)
+
+  // Реф для связи клика по Dropzone со скрытым инпутом выбора файлов
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Включение режима редактирования имени
   const startEditName = (id: number, currentName: string | null) => {
@@ -87,6 +101,62 @@ export const StoragePage = () => {
     cancelEdit()
   }
 
+  // Обработчик перетаскивания файла над зоной
+  const handleDrag = (event: React.DragEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (event.type === 'dragenter' || event.type === 'dragover') {
+      setIsDragActive(true)
+    } else if (event.type === 'dragleave' || event.type === 'drop') {
+      setIsDragActive(false)
+    }
+  }
+
+  // Обработчик "броска" файла в зону
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsDragActive(false)
+
+    // Отбираем только первый файл
+    if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+      setSelectedFile(event.dataTransfer.files[0])
+    }
+  }
+
+  // Обработчик выбора файла через стандартный проводник
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFile(event.target.files[0])
+    }
+  }
+
+  // Клик по Dropzone открывает проводник
+  const onDropzoneClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  // Отправка файла на сервер
+  const handleUploadSubmit = async (event: React.SubmitEvent) => {
+    event.preventDefault()
+    if (!selectedFile) return
+
+    try {
+      // unwrap-ом перехватываем возможную ошибку thunk-а
+      // и сбрасываем форму после успешной загрузки
+      await dispatch(uploadFile({ file: selectedFile, comment: uploadComment })).unwrap()
+
+      // Очищаем состояния после успешной загрузки
+      setSelectedFile(null)
+      setUploadComment('')
+    } catch (error) {
+      console.error('Ошибка при загрузке файла:', error)
+    }
+  }
+
   useEffect(() => {
     dispatch(fetchFiles())
   }, [dispatch])
@@ -104,6 +174,64 @@ export const StoragePage = () => {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Хранилище</h1>
+
+      {/* Форма загрузки нового файла */}
+      <form onSubmit={handleUploadSubmit} className={styles.uploadForm}>
+        <div
+          className={`${styles.dropzone} ${isDragActive ? styles.dragActive : ''} ${selectedFile ? styles.hasFile : ''}`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={onDropzoneClick}
+        >
+          {/* Скрытый стандартный инпут */}
+          <input
+            ref={fileInputRef}
+            type='file'
+            onChange={handleFileChange}
+            className={styles.hiddenFileInput}
+          />
+
+          <div className={styles.dropzoneContent}>
+            <span className={styles.uploadIcon}>☁️</span>
+            {selectedFile ? (
+              <p className={styles.dropzoneText}>
+                Выбран файл: <strong>{selectedFile.name}</strong> (
+                {(selectedFile.size / 1024 / 1024).toFixed(2)} МБ)
+              </p>
+            ) : (
+              <p className={styles.dropzoneText}>
+                Перетащите файл сюда или <strong>нажмите для выбора</strong>
+              </p>
+            )}
+          </div>
+        </div>
+        {/* Если файл выбран, показываем поле для комментария и кнопку загрузки */}
+        {selectedFile && (
+          <div className={styles.uploadDetails}>
+            <input
+              type='text'
+              placeholder='Добавить необязательный комментарий к файлу...'
+              value={uploadComment}
+              onChange={(e) => setUploadComment(e.target.value)}
+              className={styles.uploadCommentInput}
+            />
+            <div className={styles.uploadActions}>
+              <button type='submit' className={styles.submitUploadBtn}>
+                Загрузить в облако
+              </button>
+              <button
+                type='button'
+                onClick={() => setSelectedFile(null)}
+                className={styles.cancelUploadBtn}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        )}
+      </form>
 
       {isLoading && <Spinner />}
 

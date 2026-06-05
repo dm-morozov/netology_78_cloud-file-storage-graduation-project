@@ -133,6 +133,33 @@ export const updateFile = createAsyncThunk<
   }
 })
 
+// Асинхронный Thunk для загрузки нового файла
+// <StoredFile, { file: File; comment: string }>
+// Означает: при успехе возвращаем добавленный файл (StoredFile), на вход принимаем объект с файлом и комментарием
+export const uploadFile = createAsyncThunk<StoredFile, { file: File; comment: string }>(
+  'files/upload',
+  async ({ file, comment }, { rejectWithValue }) => {
+    try {
+      // Создаем объект FormData для отправки файла на сервер
+      const formData = new FormData()
+      formData.append('file', file) // ключ "file" строго соответствует сериализатору Django
+
+      if (comment.trim()) {
+        formData.append('comment', comment.trim())
+      }
+
+      // Делаем POST запрос. Axios сам подставит нужные заголовки multipart/form-data
+      const response = await api.post<{ file: StoredFile; message: string }>('/files/', formData)
+
+      // Возвращаем добавленный файл из ответа сервера
+      return response.data.file
+    } catch (error: unknown) {
+      const err = error as AxiosError<{ detail?: string }>
+      return rejectWithValue(err.response?.data?.detail || 'Не удалось загрузить файл')
+    }
+  }
+)
+
 // Создаем слайс для управления состоянием файлов
 
 const filesSlice = createSlice({
@@ -194,6 +221,19 @@ const filesSlice = createSlice({
       .addCase(updateFile.rejected, (state, action) => {
         state.isLoading = false
         state.error = (action.payload as string) || 'Ошибка при обновлении файла'
+      })
+      .addCase(uploadFile.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(uploadFile.fulfilled, (state, action: PayloadAction<StoredFile>) => {
+        state.isLoading = false
+        // Добавляем новый файл в начало списка
+        state.items.unshift(action.payload)
+      })
+      .addCase(uploadFile.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = (action.payload as string) || 'Ошибка при загрузке файла'
       })
 
     //

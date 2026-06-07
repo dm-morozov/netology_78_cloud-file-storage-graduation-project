@@ -160,6 +160,31 @@ export const uploadFile = createAsyncThunk<StoredFile, { file: File; comment: st
   }
 )
 
+// Асинхронный Thunk для создания публичной ссылки на файл
+// В дженериках указываем:
+// - возвращаем объект { fileId: number, public_token: string }
+// - на вход принимаем id файла (number)
+export const generatePublicLink = createAsyncThunk<
+  { fileId: number; public_token: string },
+  number
+>('files/generatePublicLink', async (fileId, { rejectWithValue }) => {
+  try {
+    // Отправляем POST-запрос на эндпоинт генерации ссылки
+    const response = await api.post<{ public_token: string; public_url: string }>(
+      `/files/${fileId}/public-link/`
+    )
+
+    // Возвращаем ID файла и полученный токен в редюсер
+    return {
+      fileId,
+      public_token: response.data.public_token,
+    }
+  } catch (error: unknown) {
+    const err = error as AxiosError<{ detail?: string }>
+    return rejectWithValue(err.response?.data?.detail || 'Не удалось поделиться файлом')
+  }
+})
+
 // Создаем слайс для управления состоянием файлов
 
 const filesSlice = createSlice({
@@ -234,6 +259,28 @@ const filesSlice = createSlice({
       .addCase(uploadFile.rejected, (state, action) => {
         state.isLoading = false
         state.error = (action.payload as string) || 'Ошибка при загрузке файла'
+      })
+
+      // Генерация публичной ссылки для файла
+      .addCase(generatePublicLink.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(
+        generatePublicLink.fulfilled,
+        (state, action: PayloadAction<{ fileId: number; public_token: string }>) => {
+          state.isLoading = false
+          // Обновляем public_token у расшаренного файла
+          state.items = state.items.map((file) =>
+            file.id === action.payload.fileId
+              ? { ...file, public_token: action.payload.public_token }
+              : file
+          )
+        }
+      )
+      .addCase(generatePublicLink.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = (action.payload as string) || 'Не удалось поделиться файлом'
       })
 
     //

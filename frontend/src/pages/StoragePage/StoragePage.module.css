@@ -462,3 +462,85 @@
   background-color: #e2e8f0;
   color: #334155;
 }
+
+/* Стилизация кнопки "Поделиться" */
+.shareButton {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 550;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-color: #faf5ff;
+  color: #a855f7;
+  border: 1px solid #f3e8ff;
+}
+
+/* Эффект наведения для кнопки "Поделиться" */
+.shareButton:hover {
+  background-color: #a855f7;
+  color: #ffffff;
+  border-color: #a855f7;
+  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.25);
+}
+
+/* Статус "Ссылка скопирована!" (заменяет кнопку на 2 секунды) */
+.shareStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #16a34a;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  animation: fadeInShareStatus 0.2s ease-out; /* Плавное проявление */
+}
+
+/* Анимация плавного появления плашки статуса */
+@keyframes fadeInShareStatus {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Маленький зеленый значок "Публичный" рядом с размером */
+.publicBadge {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Кнопка быстрого копирования уже созданной ссылки */
+.copyLinkButton {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 550;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.copyLinkButton:hover {
+  background-color: #16a34a;
+  color: #ffffff;
+  border-color: #16a34a;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+}

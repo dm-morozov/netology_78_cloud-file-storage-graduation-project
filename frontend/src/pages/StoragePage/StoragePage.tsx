@@ -1,3 +1,5 @@
+import { api } from '../../services/api'
+import type { AxiosError } from 'axios'
 import { useEffect, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/store'
 import {
@@ -6,6 +8,7 @@ import {
   downloadFile,
   updateFile,
   uploadFile,
+  generatePublicLink,
 } from '../../store/filesSlice'
 import Spinner from '../../components/Spinner/Spinner'
 import ErrorView from '../../components/ErrorView/ErrorView'
@@ -33,6 +36,9 @@ export const StoragePage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadComment, setUploadComment] = useState<string>('')
   const [isDragActive, setIsDragActive] = useState<boolean>(false)
+
+  // Хранит ID файла, ссылка которого была только что скопирована
+  const [copiedFileId, setCopiedFileId] = useState<number | null>(null)
 
   // Реф для связи клика по Dropzone со скрытым инпутом выбора файлов
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -169,6 +175,37 @@ export const StoragePage = () => {
 
   const handleDownload = (id: number, name: string) => {
     dispatch(downloadFile({ fileId: id, fileName: name }))
+  }
+
+  // Обработчик генерации и копирования публичной ссылки
+  const handleShare = async (fileId: number, publicToken: string | null) => {
+    // TODO: сделать
+    let token = publicToken
+
+    try {
+      // Если токена еще нет — генерируем его на сервере
+      if (!token) {
+        const result = await dispatch(generatePublicLink(fileId)).unwrap()
+        token = result.public_token
+      }
+
+      // Вычисляем адрес бэкенда на основе настроек Axios
+      const apiBase = api.defaults.baseURL || 'http://localhost:8000/api'
+      const backendBase = apiBase.replace(/\/api$/, '') // Убираем "/api" с конца
+      const publicUrl = `${backendBase}/api/public/files/${token}/`
+
+      // Копируем ссылку в буфер обмена браузера
+      await navigator.clipboard.writeText(publicUrl)
+      // Показываем уведомление на 2 секунды
+      setCopiedFileId(fileId)
+      setTimeout(() => {
+        setCopiedFileId(null)
+      }, 2000)
+    } catch (error) {
+      // Приводим ошибку к AxiosError для безопасного доступа к полю detail
+      const err = error as AxiosError<{ detail?: string }>
+      console.error('Не удалось скопировать ссылку:', err.response?.data?.detail)
+    }
   }
 
   return (
@@ -315,6 +352,12 @@ export const StoragePage = () => {
                     )}
                     <span className={styles.fileSize}>
                       {(file.size / 1024 / 1024).toFixed(2)} МБ
+                      {/* Если файл публичный — выводим красивую плашку */}
+                      {file.public_token && (
+                        <span className={styles.publicBadge} title='Файл доступен по ссылке'>
+                          🌐 Публичный
+                        </span>
+                      )}
                     </span>
                   </div>
 
@@ -386,17 +429,35 @@ export const StoragePage = () => {
 
                   {/* Контейнер для кнопок управления файлом */}
                   <div className={styles.fileActions}>
+                    {/*Кнопка поделиться*/}
+                    {copiedFileId === file.id ? (
+                      <span className={styles.shareStatus}>🔗 Ссылка скопирована! </span>
+                    ) : (
+                      <button
+                        // Если файл уже публичный, добавляем класс copyLinkButton, иначе shareButton
+                        className={file.public_token ? styles.copyLinkButton : styles.shareButton}
+                        onClick={() => handleShare(file.id, file.public_token)}
+                        title={
+                          file.public_token
+                            ? 'Копировать публичную ссылку'
+                            : 'Сделать файл доступным по ссылке'
+                        }
+                      >
+                        {file.public_token ? '📋' : '🔗'}
+                      </button>
+                    )}
+
                     <button
                       className={styles.downloadButton}
                       onClick={() => handleDownload(file.id, file.original_name)}
                     >
-                      Скачать
+                      ⬇️
                     </button>
                     <button
                       onClick={() => handleDelete(file.id, file.original_name)}
                       className={styles.deleteButton}
                     >
-                      Удалить
+                      🗑️
                     </button>
                   </div>
                 </li>

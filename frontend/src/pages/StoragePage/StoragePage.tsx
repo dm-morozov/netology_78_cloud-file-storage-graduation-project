@@ -15,6 +15,7 @@ import ErrorView from '../../components/ErrorView/ErrorView'
 
 import styles from './StoragePage.module.css'
 import { Link } from 'react-router-dom'
+import { formatBytes } from '../../utils/format'
 
 export const StoragePage = () => {
   const dispatch = useAppDispatch()
@@ -234,8 +235,7 @@ export const StoragePage = () => {
             <span className={styles.uploadIcon}>☁️</span>
             {selectedFile ? (
               <p className={styles.dropzoneText}>
-                Выбран файл: <strong>{selectedFile.name}</strong> (
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} МБ)
+                Выбран файл: <strong>{selectedFile.name}</strong> ({formatBytes(selectedFile.size)})
               </p>
             ) : (
               <p className={styles.dropzoneText}>
@@ -351,7 +351,7 @@ export const StoragePage = () => {
                       </span>
                     )}
                     <span className={styles.fileSize}>
-                      {(file.size / 1024 / 1024).toFixed(2)} МБ
+                      {formatBytes(file.size)}
                       {/* Если файл публичный — выводим красивую плашку */}
                       {file.public_token && (
                         <span className={styles.publicBadge} title='Файл доступен по ссылке'>

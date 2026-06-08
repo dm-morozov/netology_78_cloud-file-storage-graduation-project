@@ -1,12 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit'
 import authReducer from './authSlice'
 import filesReducer from './filesSlice'
+import adminReducer from './adminSlice'
 import { useDispatch, useSelector } from 'react-redux'
 
 export const store = configureStore({
   reducer: {
     auth: authReducer, // сюда будет писать authSlice
     files: filesReducer,
+    admin: adminReducer,
   },
 })
 

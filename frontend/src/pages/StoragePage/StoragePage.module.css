@@ -161,6 +161,26 @@
   box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
 }
 
+/* Стилизация кнопки просмотра файла inline */
+.viewButton {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 550;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #dcfce7;
+}
+
+.viewButton:hover {
+  background-color: #16a34a;
+  color: #ffffff;
+  border-color: #16a34a;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+}
+
 /* Обертка для inline-редактирования */
 .inlineEditWrapper {
   display: flex;

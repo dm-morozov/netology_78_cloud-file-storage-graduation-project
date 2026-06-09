@@ -115,6 +115,33 @@ export const downloadFile = createAsyncThunk<void, { fileId: number; fileName: s
     }
   }
 )
+
+// Асинхронный Thunk для просмотра файла в браузере (inline)
+export const viewFileInline = createAsyncThunk<void, { fileId: number }>(
+  'files/viewInline',
+  async ({ fileId }, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/files/${fileId}/download/`, {
+        params: { inline: 'true' },
+        responseType: 'blob',
+      })
+      const contentType = response.headers['content-type']
+      const contentTypeStr =
+        typeof contentType === 'string' ? contentType : 'application/octet-stream'
+      const blob = new Blob([response.data], { type: contentTypeStr })
+      const url = window.URL.createObjectURL(blob)
+      window.open(url, '_blank')
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url)
+      }, 5000)
+      return
+    } catch (error: unknown) {
+      const err = error as AxiosError<{ detail?: string }>
+      return rejectWithValue(err.response?.data?.detail || 'Не удалось открыть файл для просмотра')
+    }
+  }
+)
+
 // На входе Thunk будет принимать объект с ID файла и полями, которые мы хотим изменить
 export const updateFile = createAsyncThunk<
   StoredFile,

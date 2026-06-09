@@ -24,9 +24,11 @@ class FilePublicDownloadApi(APIView):
             # Если файл существует и в БД и Локально, тогда меняем время скачивания
             mark_file_as_downloaded(stored_file)
 
+            inline = request.query_params.get("inline", "false").lower() == "true"
+
             return FileResponse(
                 file_handle,  # открываем файл для чтения в бинарном режиме
-                as_attachment=True,  # т.е. файл нужно именно скачать, а не inline (открыть в браузере)
+                as_attachment=not inline,  # если inline=true, отдаем для просмотра в браузере
                 filename=stored_file.original_name,
             )
 

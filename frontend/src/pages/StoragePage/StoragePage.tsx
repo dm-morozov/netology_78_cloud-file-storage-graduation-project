@@ -9,6 +9,7 @@ import {
   updateFile,
   uploadFile,
   generatePublicLink,
+  viewFileInline,
 } from '../../store/filesSlice'
 import Spinner from '../../components/Spinner/Spinner'
 import ErrorView from '../../components/ErrorView/ErrorView'
@@ -455,6 +456,13 @@ export const StoragePage = () => {
                       </button>
                     )}
 
+                    <button
+                      className={styles.viewButton}
+                      onClick={() => dispatch(viewFileInline({ fileId: file.id }))}
+                      title='Открыть в браузере (просмотр)'
+                    >
+                      👁️
+                    </button>
                     <button
                       className={styles.downloadButton}
                       onClick={() => handleDownload(file.id, file.original_name)}

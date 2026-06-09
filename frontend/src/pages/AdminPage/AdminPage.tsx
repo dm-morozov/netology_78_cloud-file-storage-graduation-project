@@ -14,7 +14,7 @@ import styles from './AdminPage.module.css'
 import Spinner from '../../components/Spinner/Spinner'
 import ErrorView from '../../components/ErrorView/ErrorView'
 import { ConfirmModal } from '../../components/ConfirmModal/ConfirmModal'
-import { downloadFile } from '../../store/filesSlice'
+import { downloadFile, viewFileInline } from '../../store/filesSlice'
 
 export const AdminPage = () => {
   const dispatch = useAppDispatch()
@@ -237,6 +237,12 @@ export const AdminPage = () => {
                         {new Date(file.uploaded_at).toLocaleDateString()}
                       </td>
                       <td>
+                        <button
+                          className={`${styles.actionButton} ${styles.actionButtonView}`}
+                          onClick={() => dispatch(viewFileInline({ fileId: file.id }))}
+                        >
+                          Просмотр
+                        </button>
                         <button
                           className={`${styles.actionButton} ${styles.actionButtonDownload}`}
                           onClick={() => handleDownload(file.id, file.original_name)}

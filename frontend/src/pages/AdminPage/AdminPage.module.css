@@ -130,3 +130,106 @@
   color: #475569;
   border: 1px solid #e2e8f0;
 }
+
+/* Строки таблицы с плавным наведением */
+.row {
+  transition: background-color 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.row:hover {
+  background-color: #f8fafc;
+}
+
+/* Стиль для выделенной строки */
+.row.selected {
+  background-color: #eef2ff;
+}
+
+.row.selected td {
+  border-bottom-color: #e0e7ff;
+}
+
+/* При выборе пользователя сетка на десктопе делится на 2 колонки: список юзеров (1.5 части) и их файлы (1.2 части) */
+@media (min-width: 1024px) {
+  .layout.hasSelection {
+    grid-template-columns: 1.5fr 1.2fr;
+  }
+}
+
+/* Шапка панели файлов */
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+
+/* Заголовок панели файлов */
+.panelTitle {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* Кнопка закрытия панели (крестик) */
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: all 0.2s;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+
+/* Текст пустого состояния */
+.emptyText {
+  text-align: center;
+  color: #64748b;
+  padding: 40px 0;
+  font-style: italic;
+}
+
+/* Форматированная дата файла */
+.fileDate {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* Общие стили для кнопок действий */
+.actionButton {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Кнопка удаления (мягкий красный цвет) */
+.actionButtonDelete {
+  background-color: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+}
+
+.actionButtonDelete:hover {
+  background-color: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
+}

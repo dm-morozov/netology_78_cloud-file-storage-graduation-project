@@ -14,11 +14,14 @@ import Spinner from '../../components/Spinner/Spinner'
 import ErrorView from '../../components/ErrorView/ErrorView'
 
 import styles from './StoragePage.module.css'
-import { Link } from 'react-router-dom'
 import { formatBytes } from '../../utils/format'
+import { ConfirmModal } from '../../components/ConfirmModal/ConfirmModal'
 
 export const StoragePage = () => {
   const dispatch = useAppDispatch()
+
+  // Состояние для хранения данных файла, который будем удалять
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
 
   const { isLoading, items, error } = useAppSelector((state) => state.files)
 
@@ -168,9 +171,16 @@ export const StoragePage = () => {
     dispatch(fetchFiles())
   }, [dispatch])
 
-  const handleDelete = (id: number, name: string) => {
-    if (window.confirm(`Вы уверены, что хотите удалить файл "${name}"?`)) {
-      dispatch(deleteFile(id))
+  // Вызывается при клике на иконку корзины
+  const handleDeleteClick = (id: number, name: string) => {
+    setDeleteTarget({ id, name }) // Запоминаем цель и открываем модалку
+  }
+
+  // Вызывается при нажатии "Да, удалить" в модалке
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      dispatch(deleteFile(deleteTarget.id))
+      setDeleteTarget(null) // Закрываем модалку
     }
   }
 
@@ -279,10 +289,8 @@ export const StoragePage = () => {
           <h3 className={styles.sectionTitle}>Список файлов в облаке:</h3>
           {items.length === 0 ? (
             <p className={styles.emptyList}>
-              Хранилище файлов постое. Добавьте первый файл. В дальнейшем ссылка на добавление{' '}
-              <Link to='/upload' className={styles.emptyLink}>
-                ссылка
-              </Link>
+              Хранилище файлов постое. <br />
+              Добавьте первый файл.
             </p>
           ) : (
             <ul className={styles.list}>
@@ -454,7 +462,7 @@ export const StoragePage = () => {
                       ⬇️
                     </button>
                     <button
-                      onClick={() => handleDelete(file.id, file.original_name)}
+                      onClick={() => handleDeleteClick(file.id, file.original_name)}
                       className={styles.deleteButton}
                     >
                       🗑️
@@ -466,6 +474,13 @@ export const StoragePage = () => {
           )}
         </div>
       )}
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title='Удаление файла'
+        message={`Вы действительно хотите удалить файл "${deleteTarget?.name}"?`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

@@ -1,0 +1,109 @@
+/* Полупрозрачный задний фон на весь экран */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.35); /* Темный полупрозрачный фон */
+  backdrop-filter: blur(6px); /* Тот самый стеклянный блюр (размытие) задника */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Поверх всех элементов */
+  animation: fadeIn 0.2s ease-out; /* Плавное проявление */
+}
+
+/* Сама карточка модального окна */
+.modal {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f1f5f9;
+  animation: slideUp 0.2s ease-out; /* Плавное «выезжание» снизу */
+}
+
+/* Заголовок модалки */
+.title {
+  margin: 0 0 12px 0;
+  font-size: 1.2rem;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+/* Текст сообщения */
+.message {
+  margin: 0 0 24px 0;
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+/* Контейнер для кнопок (выстраивает их в ряд и прижимает вправо) */
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* Общий стиль кнопок */
+.cancelBtn,
+.confirmBtn {
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+/* Кнопка отмены (серая) */
+.cancelBtn {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.cancelBtn:hover {
+  background-color: #e2e8f0;
+  color: #1e293b;
+}
+
+/* Кнопка подтверждения (красная) */
+.confirmBtn {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.confirmBtn:hover {
+  background-color: #dc2626;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+/* --- АНИМАЦИИ --- */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

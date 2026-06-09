@@ -79,6 +79,36 @@ export const deleteUserFileAdmin = createAsyncThunk<
   }
 })
 
+// Thunk для переключения статуса администратора (is_staff)
+export const toggleUserAdminStatus = createAsyncThunk<
+  AdminUser,
+  { userId: number; isStaff: boolean }
+>('admin/toggleAdminStatus', async ({ userId, isStaff }, { rejectWithValue }) => {
+  try {
+    const response = await api.patch<AdminUser>(`/users/${userId}/`, {
+      is_staff: isStaff,
+    })
+    return response.data
+  } catch (error: unknown) {
+    const err = error as AxiosError<{ detail?: string }>
+    return rejectWithValue(err.response?.data?.detail || 'Не удалось изменить права администратора')
+  }
+})
+
+// Thunk для удаления пользователя
+export const deleteUser = createAsyncThunk<number, number>(
+  'admin/deleteUser',
+  async (userId: number, { rejectWithValue }) => {
+    try {
+      await api.delete(`/users/${userId}/`)
+      return userId
+    } catch (error: unknown) {
+      const err = error as AxiosError<{ detail?: string }>
+      return rejectWithValue(err.response?.data?.detail || 'Не удалось удалить пользователя')
+    }
+  }
+)
+
 const adminSlice = createSlice({
   name: 'admin',
   initialState,
@@ -134,17 +164,17 @@ const adminSlice = createSlice({
         state.isFilesLoading = false
         const { fileId, size } = action.payload
 
-        // 1. Удаляем файл из списка выбранного пользователя
+        // Удаляем файл из списка выбранного пользователя
         state.selectedUserFile = state.selectedUserFile.filter((f) => f.id !== fileId)
 
-        // 2. Ищем этого пользователя в общем списке и обновляем его статистику
+        // Ищем этого пользователя в общем списке и обновляем его статистику
         const targetUser = state.users.find((u) => u.id === state.selectedUser?.id)
         if (targetUser) {
           targetUser.files_count = Math.max(0, targetUser.files_count - 1)
           targetUser.total_size = Math.max(0, targetUser.total_size - size)
         }
 
-        // 3. Обновляем статистику у самого объекта выбранного пользователя
+        // Обновляем статистику у самого объекта выбранного пользователя
         if (state.selectedUser) {
           state.selectedUser.files_count = Math.max(0, state.selectedUser.files_count - 1)
           state.selectedUser.total_size = Math.max(0, state.selectedUser.total_size - size)
@@ -152,6 +182,44 @@ const adminSlice = createSlice({
       })
       .addCase(deleteUserFileAdmin.rejected, (state, action) => {
         state.isFilesLoading = false
+        state.error = action.payload as string
+      })
+
+      // toggleUserAdminStatus (изменение роли администратора)
+      .addCase(toggleUserAdminStatus.pending, (state) => {
+        state.error = null
+        // мы не ставим state.isLoading = true,
+        // чтобы при переключении роли вся таблица не заменялась спиннером.
+        // Пусть переключение происходит плавно и бесшовно!
+      })
+      .addCase(toggleUserAdminStatus.fulfilled, (state, action: PayloadAction<AdminUser>) => {
+        const updatedUser = action.payload
+
+        // Заменяем пользователя в массиве на обновленного
+        state.users = state.users.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+
+        // Если этот пользователь сейчас выбран справа — обновляем и его объект
+        if (state.selectedUser && state.selectedUser.id === updatedUser.id) {
+          state.selectedUser = updatedUser
+        }
+      })
+      .addCase(toggleUserAdminStatus.rejected, (state, action) => {
+        state.error = action.payload as string
+      })
+
+      // deleteUser (удаление пользователя)
+      .addCase(deleteUser.pending, (state) => {
+        state.error = null
+      })
+      .addCase(deleteUser.fulfilled, (state, action: PayloadAction<number>) => {
+        const deletedUserId = action.payload
+        state.users = state.users.filter((u) => u.id !== deletedUserId)
+        if (state.selectedUser && state.selectedUser.id === deletedUserId) {
+          state.selectedUser = null
+          state.selectedUserFile = []
+        }
+      })
+      .addCase(deleteUser.rejected, (state, action) => {
         state.error = action.payload as string
       })
   },

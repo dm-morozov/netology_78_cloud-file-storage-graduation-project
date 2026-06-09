@@ -7,8 +7,8 @@ interface ConfirmModalProps {
   message: string // Текст вопроса (например, "Вы уверены?")
   confirmText?: string // Текст кнопки подтверждения
   cancelText?: string // Текст кнопки отмены
-  onConfirm: () => void // Функция при согласии
-  onCancel: () => void // Функция при отмене
+  onConfirm?: () => void // Функция при согласии (необязательная)
+  onCancel: () => void // Функция при отмене/закрытии
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -34,9 +34,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <button className={styles.cancelBtn} onClick={onCancel}>
             {cancelText}
           </button>
-          <button className={styles.confirmBtn} onClick={onConfirm}>
-            {confirmText}
-          </button>
+          {onConfirm && (
+            <button className={styles.confirmBtn} onClick={onConfirm}>
+              {confirmText}
+            </button>
+          )}
         </div>
       </div>
     </div>

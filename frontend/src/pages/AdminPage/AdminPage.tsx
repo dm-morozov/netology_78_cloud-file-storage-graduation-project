@@ -5,6 +5,8 @@ import {
   selectUser,
   type AdminUser,
   deleteUserFileAdmin,
+  toggleUserAdminStatus,
+  deleteUser,
 } from '../../store/adminSlice'
 import { useAppDispatch, useAppSelector } from '../../store/store'
 import { formatBytes } from '../../utils/format'
@@ -12,17 +14,33 @@ import styles from './AdminPage.module.css'
 import Spinner from '../../components/Spinner/Spinner'
 import ErrorView from '../../components/ErrorView/ErrorView'
 import { ConfirmModal } from '../../components/ConfirmModal/ConfirmModal'
+import { downloadFile } from '../../store/filesSlice'
 
 export const AdminPage = () => {
   const dispatch = useAppDispatch()
+
+  // Загрузка данных из хранилища Redux
   const { users, isLoading, error, selectedUser, isFilesLoading, selectedUserFile } =
     useAppSelector((state) => state.admin)
 
+  // Текущий залогиненный пользователь
+  const currentUser = useAppSelector((state) => state.auth.user)
+
+  // Состояние для хранения ID файла, который будет удален
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number
     size: number
     name: string
   } | null>(null)
+
+  // Состояние для хранения ID пользователя, чья роль будет изменена
+  const [roleToggleTarget, setRoleToggleTarget] = useState<AdminUser | null>(null)
+
+  // Состояние для удаления пользователя
+  const [userDeleteTarget, setUserDeleteTarget] = useState<AdminUser | null>(null)
+
+  // Состояние для показа предупреждений
+  const [warningMessage, setWarningMessage] = useState<string | null>(null)
 
   // Эффект 1: Загрузка списка пользователей при монтировании страницы
   useEffect(() => {
@@ -69,6 +87,58 @@ export const AdminPage = () => {
     }
   }
 
+  // Скачивание файла
+  const handleDownload = (fileId: number, fileName: string) => {
+    dispatch(downloadFile({ fileId, fileName }))
+  }
+
+  // Вызывается при клике на бейдж роли
+  const handleToggleRoleClick = (e: React.MouseEvent, user: AdminUser) => {
+    e.stopPropagation() // Останавливаем всплытие клика к строке таблицы!
+
+    // Защита: не даем лишить прав администратора самого себя
+    if (currentUser && currentUser.id === user.id) {
+      setWarningMessage('Вы не можете лишить прав администратора самого себя!')
+      return
+    }
+
+    setRoleToggleTarget(user) // Открываем модалку для этого пользователя
+  }
+
+  // Вызывается при клике на кнопку удаления пользователя
+  const handleDeleteUserClick = (e: React.MouseEvent, user: AdminUser) => {
+    e.stopPropagation() // Останавливаем всплытие клика к строке таблицы!
+
+    // Защита: не даем удалить самого себя
+    if (currentUser && currentUser.id === user.id) {
+      setWarningMessage('Вы не можете удалить самого себя!')
+      return
+    }
+
+    setUserDeleteTarget(user) // Открываем модалку удаления
+  }
+
+  // Вызывается при нажатии "Да" в модалке удаления пользователя
+  const handleConfirmDeleteUser = () => {
+    if (userDeleteTarget) {
+      dispatch(deleteUser(userDeleteTarget.id))
+      setUserDeleteTarget(null) // Закрываем модалку
+    }
+  }
+
+  // Вызывается при нажатии "Да" в модалке изменения роли
+  const handleConfirmToggleRole = () => {
+    if (roleToggleTarget) {
+      dispatch(
+        toggleUserAdminStatus({
+          userId: roleToggleTarget.id,
+          isStaff: !roleToggleTarget.is_staff, // Меняем статус на противоположный
+        })
+      )
+      setRoleToggleTarget(null) // Закрываем модалку
+    }
+  }
+
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Админ-панель</h1>
@@ -86,6 +156,7 @@ export const AdminPage = () => {
                 <th>Роль</th>
                 <th>Файлов</th>
                 <th>Занято места</th>
+                <th>Действия</th>
               </tr>
             </thead>
             <tbody>
@@ -105,13 +176,27 @@ export const AdminPage = () => {
                   </td>
                   <td>
                     <span
-                      className={`${styles.badge} ${user.is_staff ? styles.badgeAdmin : styles.badgeUser}`}
+                      className={`${styles.badge} ${user.is_staff ? styles.badgeAdmin : styles.badgeUser} ${styles.badgeInteractive}`}
+                      onClick={(e) => handleToggleRoleClick(e, user)}
+                      title={
+                        user.is_staff ? 'Снять права администратора' : 'Сделать администратором'
+                      }
                     >
                       {user.is_staff ? '⭐ Админ' : 'Пользователь'}
                     </span>
                   </td>
+
                   <td>{user.files_count}</td>
                   <td>{formatBytes(user.total_size)}</td>
+                  <td>
+                    <button
+                      className={`${styles.actionButton} ${styles.actionButtonDelete}`}
+                      onClick={(e) => handleDeleteUserClick(e, user)}
+                      title='Удалить пользователя'
+                    >
+                      Удалить
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -153,6 +238,12 @@ export const AdminPage = () => {
                       </td>
                       <td>
                         <button
+                          className={`${styles.actionButton} ${styles.actionButtonDownload}`}
+                          onClick={() => handleDownload(file.id, file.original_name)}
+                        >
+                          Скачать
+                        </button>
+                        <button
                           className={`${styles.actionButton} ${styles.actionButtonDelete}`}
                           onClick={() => handleDeleteClick(file.id, file.size, file.original_name)}
                         >
@@ -173,6 +264,33 @@ export const AdminPage = () => {
         message={`Вы действительно хотите удалить файл "${deleteTarget?.name}"?`}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <ConfirmModal
+        isOpen={roleToggleTarget !== null}
+        title='Изменение роли пользователя'
+        message={
+          roleToggleTarget?.is_staff
+            ? `Вы действительно хотите снять статус администратора с пользователя "${roleToggleTarget?.username}"?`
+            : `Вы действительно хотите назначить пользователя "${roleToggleTarget?.username}" администратором?`
+        }
+        confirmText='Подтвердить'
+        onConfirm={handleConfirmToggleRole}
+        onCancel={() => setRoleToggleTarget(null)}
+      />
+      <ConfirmModal
+        isOpen={userDeleteTarget !== null}
+        title='Удаление пользователя'
+        message={`Вы действительно хотите удалить пользователя "${userDeleteTarget?.username}" и все его файлы?`}
+        confirmText='Да, удалить'
+        onConfirm={handleConfirmDeleteUser}
+        onCancel={() => setUserDeleteTarget(null)}
+      />
+      <ConfirmModal
+        isOpen={warningMessage !== null}
+        title='Ограничение действия'
+        message={warningMessage || ''}
+        cancelText='Хорошо'
+        onCancel={() => setWarningMessage(null)}
       />
     </div>
   )

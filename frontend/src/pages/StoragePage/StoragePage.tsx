@@ -203,7 +203,10 @@ export const StoragePage = () => {
 
       // Вычисляем адрес бэкенда на основе настроек Axios
       const apiBase = api.defaults.baseURL || 'http://localhost:8000/api'
-      const backendBase = apiBase.replace(/\/api$/, '') // Убираем "/api" с конца
+      let backendBase = apiBase.replace(/\/api$/, '') // Убираем "/api" с конца
+      if (!backendBase || backendBase.startsWith('/')) {
+        backendBase = window.location.origin + backendBase
+      }
       const publicUrl = `${backendBase}/api/public/files/${token}/`
 
       // Копируем ссылку в буфер обмена браузера

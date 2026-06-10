@@ -234,6 +234,98 @@ cd <ИМЯ_ПАПКИ>
 
 ---
 
+## 🛠️ Выполнение замечаний преподавателя (Александра Мужева)
+
+Все замечания, полученные на этапе проверки бэкенда, были полностью устранены:
+1. **Просмотр файлов в браузере (Inline-просмотр)**:
+   * На бэкенде реализована поддержка query-параметра `?inline=true` для эндпоинта скачивания файлов, отключающая принудительное скачивание (`as_attachment=False`) и возвращающая файл с заголовком `Content-Disposition: inline`.
+   * На фронтенде добавлена кнопка **«Просмотр»** (иконка глаза), которая открывает картинки, PDF и текстовые файлы непосредственно в новой вкладке браузера без принудительной загрузки на диск.
+2. **Форматирование размера хранилища (`total_size`)**:
+   * На фронтенде реализован хелпер, конвертирующий байты в понятные человеку величины (Байты, КБ, МБ, ГБ). В таблице администратора размер хранилища каждого пользователя и размеры файлов выводятся в отформатированном виде (например, `1.33 МБ`).
+3. **Удаление пустых файлов**:
+   * Файлы `backend/common/exceptions.py` и `backend/common/utils.py` были удалены из структуры проекта как неиспользуемые.
+4. **Сквозная интеграция**:
+   * Разработан полнофункциональный React (TypeScript, Redux Toolkit, React Router) SPA клиент, полностью взаимодействующий с Django API.
+
+---
+
+## 🌐 Деплой на продакшн-сервере (VPS)
+
+Приложение успешно развернуто и доступно в продакшене по постоянному адресу:
+* **Публичная ссылка на проект**: [http://80.78.254.193/](http://80.78.254.193/)
+* **Тестовый административный аккаунт**:
+  * **Логин**: `cloud_user`
+  * **Пароль**: `Dem_Qwerty`
+
+### Схема развертывания
+Приложение развернуто на виртуальном сервере (Ubuntu 24.04 LTS) под управлением **Nginx** и **Gunicorn**:
+* **Nginx** работает как обратный прокси (Reverse Proxy) для Django (Gunicorn) и напрямую раздает статические файлы собранного React-приложения (`frontend/dist`) и медиафайлы из `storage/media/`.
+* **Gunicorn** запущен в виде системного демона `systemd` и прослушивает локальный порт `127.0.0.1:8000` для обработки API-запросов.
+* В качестве СУБД используется **PostgreSQL**, развернутый локально на сервере.
+
+### Основные этапы настройки сервера:
+1. **Настройка Swap**: так как сервер имеет 1 ГБ оперативной памяти, был создан swap-файл объемом 2 ГБ для предотвращения падения процессов из-за нехватки памяти (OOM) во время сборки фронтенда.
+2. **Настройка Gunicorn (`/etc/systemd/system/gunicorn.service`)**:
+   ```ini
+   [Unit]
+   Description=gunicorn daemon for My Cloud backend
+   After=network.target
+
+   [Service]
+   User=root
+   WorkingDirectory=/root/netology_78_cloud-file-storage-graduation-project/backend
+   ExecStart=/root/netology_78_cloud-file-storage-graduation-project/backend/.venv/bin/gunicorn \
+             --workers 3 \
+             --bind 127.0.0.1:8000 \
+             config.wsgi:application
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+3. **Конфигурация Nginx (`/etc/nginx/sites-available/default`)**:
+   ```nginx
+   server {
+       listen 80 default_server;
+       listen [::]:80 default_server;
+
+       server_name 80.78.254.193;
+       client_max_body_size 500M;
+
+       # 1. Раздача фронтенда (React SPA)
+       location / {
+           root /root/netology_78_cloud-file-storage-graduation-project/frontend/dist;
+           index index.html;
+           try_files $uri $uri/ /index.html;
+       }
+
+       # 2. Раздача медиафайлов
+       location /media/ {
+           alias /root/netology_78_cloud-file-storage-graduation-project/backend/storage/media/;
+       }
+
+       # 3. Раздача статики бэкенда (админка Django)
+       location /static/ {
+           alias /root/netology_78_cloud-file-storage-graduation-project/backend/storage/static/;
+       }
+
+       # 4. Проксирование API-запросов к Django
+       location /api/ {
+           proxy_set_header Host $http_host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+           proxy_pass http://127.0.0.1:8000;
+       }
+   }
+   ```
+4. **Настройка прав доступа**: для обеспечения доступа Nginx (`www-data`) к файлам сборки в `/root` были выполнены команды:
+   ```bash
+   chmod +x /root
+   chmod -R o+rx /root/netology_78_cloud-file-storage-graduation-project
+   ```
+
+---
+
 ## Автор
 
 Дмитрий Морозов

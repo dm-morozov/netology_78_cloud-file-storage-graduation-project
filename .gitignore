@@ -43,6 +43,7 @@ coverage/
 # Environment
 .env
 .env.*
+!.env.example
 .env.local
 
 # Logs
